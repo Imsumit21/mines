@@ -1,0 +1,5 @@
+export { default as Header } from './Header'
+export { default as Sidebar } from './Sidebar'
+export { default as Footer } from './Footer'
+export { default as MobileNavigation } from './MobileNavigation'
+export { default as GameArea } from './GameArea' 
