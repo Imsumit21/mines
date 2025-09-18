@@ -1,103 +1,262 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import { motion, AnimatePresence } from "framer-motion"
+import Head from "next/head"
+
+import { useGameState, useModalState, useUIState, useAutoplay } from "./hooks"
+
+// Import extracted components
+import { GameGrid, GameStats } from "./components/game"
+import {
+  AddFundsModal,
+  ResultsModal,
+  RulesModal,
+  PatternInfoModal,
+  HistoryModal,
+  HomeModal,
+  LoadingScreen
+} from "./components/modals"
+import {
+  Header,
+  Sidebar,
+  Footer,
+  MobileNavigation,
+  GameArea
+} from "./components/layout"
+
+
+import { Bodoni_Moda, Raleway } from 'next/font/google'
+
+const bodoni = Bodoni_Moda({
+  subsets: ['latin'],
+  variable: '--font-bodoni',
+})
+
+const raleway = Raleway({
+  subsets: ['latin'],
+  variable: '--font-raleway',
+})
+
+
+
+
+
+
+export default function GemsAndMines(): React.JSX.Element {
+  // Use custom hooks for state management
+  const {
+    gameState,
+    setGameState,
+    startGame,
+    revealCell,
+    takeWinnings,
+    resetGame,
+    updateBetAmount,
+    updateMinesCount,
+    toggleAutoplayCell,
+    calculateMaxProfit,
+    calculateOdds,
+    currentMultiplier,
+    addFunds,
+    calculateWinnings,
+    DEFAULT_BET_PRESETS,
+  } = useGameState()
+
+  const {
+    showResults,
+    setShowResults,
+    resultsMessage,
+    setResultsMessage,
+    showRules,
+    setShowRules,
+    showPatternInfo,
+    setShowPatternInfo,
+    showAddFundsModal,
+    setShowAddFundsModal,
+    addAmount,
+    setAddAmount,
+    showHistory,
+    setShowHistory,
+    showHome,
+    setShowHome,
+    isLoading,
+    setIsLoading,
+  } = useModalState()
+
+  const {
+    activeBetPreset,
+    setActiveBetPreset,
+    activeTab,
+    setActiveTab,
+    isFullscreen,
+    setIsFullscreen,
+    showPatternDropdown,
+    setShowPatternDropdown,
+    toggleFullscreen,
+  } = useUIState()
+
+  // Initialize autoplay hook
+  useAutoplay({
+    gameState,
+    calculateWinnings,
+    startGame,
+    setGameState,
+    setShowResults,
+    setResultsMessage
+  })
+
+  // Handle add funds
+  const handleAddFunds = () => {
+    const numericAmount = parseInt(addAmount);
+    if (numericAmount > 0) {
+      addFunds(numericAmount);
+      setShowAddFundsModal(false)
+    }
+  }
+
+  // Handle bet preset selection
+  const setBetFromPreset = (presetIndex: number) => {
+    if (!gameState.isPlaying) {
+      const presetAmount = DEFAULT_BET_PRESETS[presetIndex]
+      setActiveBetPreset(presetIndex)
+      updateBetAmount(presetAmount)
+    }
+  }
+
+  // Handle bet amount modification
+  const modifyBetAmount = (multiplier: number) => {
+    if (!gameState.isPlaying) {
+      updateBetAmount(gameState.betAmount * multiplier)
+      setActiveBetPreset(null)
+    }
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+    <>
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      </Head>
+      <div className={`min-h-screen min-h-[100dvh] bg-gray-900 text-white flex flex-col ${bodoni.variable} ${raleway.variable} overflow-y-auto`}>
+        {!showHome && (
+          <div className="w-full flex flex-col px-2 pb-16 md:pb-0 min-h-screen min-h-[100dvh]"> 
+            <Header
+              wallet={gameState.wallet}
+              onAddFunds={() => setShowAddFundsModal(true)}
+              onShowHome={() => setShowHome(true)}
+              onShowHistory={() => setShowHistory(true)}
+              onToggleFullscreen={toggleFullscreen}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-2 flex-1 md:h-[calc(100vh-45px)] md:min-h-[calc(100dvh-45px)]">
+              <Sidebar
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                betAmount={gameState.betAmount}
+                minesCount={gameState.minesCount}
+                isPlaying={gameState.isPlaying}
+                isGameOver={gameState.isGameOver}
+                wallet={gameState.wallet}
+                potentialWinnings={gameState.potentialWinnings}
+                maxProfit={calculateMaxProfit()}
+                currentMultiplier={currentMultiplier}
+                onBetAmountChange={updateBetAmount}
+                onMinesCountChange={updateMinesCount}
+                onStartGame={startGame}
+                onTakeWinnings={takeWinnings}
+                onPresetClick={setBetFromPreset}
+                activeBetPreset={activeBetPreset}
+              />
+                              <GameArea
+                  grid={gameState.grid}
+                  revealedCells={gameState.revealedCells}
+                                    isPlaying={gameState.isPlaying}
+                                    autoplayEnabled={gameState.autoplayEnabled}
+                  autoplaySelectedCells={gameState.autoplaySelectedCells}
+                                    onCellClick={revealCell}
+                                    onAutoplayToggle={toggleAutoplayCell}
+                  onResetGame={resetGame}
+                  onShowRules={() => setShowRules(true)}
+                  revealedCellsCount={gameState.revealedCells.length}
+                  minesCount={gameState.minesCount}
+                  currentMultiplier={currentMultiplier}
+                  gemChance={calculateOdds()}
+                />
+            </div>
+          </div>
+        )}
+
+        {!showHome && (
+          <MobileNavigation
+            onShowHome={() => setShowHome(true)}
+            onShowHistory={() => setShowHistory(true)}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+        )}
+
+        <Footer isFullscreen={isFullscreen} />
+
+        <AnimatePresence mode="wait">
+          <AddFundsModal 
+            key="add-funds-modal"
+            isOpen={showAddFundsModal}
+            onClose={() => setShowAddFundsModal(false)}
+            onAddFunds={addFunds}
+            addAmount={addAmount}
+            setAddAmount={setAddAmount}
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
+          <ResultsModal 
+            key="results-modal"
+            isOpen={showResults}
+            onClose={() => {
+              setShowResults(false);
+              resetGame();
+            }}
+            isWin={gameState.isWin}
+            resultsMessage={resultsMessage}
+            onPlayAgain={() => {
+              setShowResults(false);
+              resetGame();
+              setTimeout(() => {
+                startGame();
+              }, 50);
+            }}
           />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+          <RulesModal 
+            key="rules-modal"
+            isOpen={showRules}
+            onClose={() => setShowRules(false)}
+          />
+          <PatternInfoModal 
+            key="pattern-info-modal"
+            isOpen={showPatternInfo}
+            onClose={() => setShowPatternInfo(false)}
+          />
+          <HistoryModal 
+            key="history-modal"
+            isOpen={showHistory}
+            onClose={() => setShowHistory(false)}
+            bettingHistory={gameState.bettingHistory}
+          />
+          <HomeModal 
+            key="home-modal"
+            isOpen={showHome}
+            onClose={() => setShowHome(false)}
+            onStartPlaying={() => {
+              setIsLoading(true);
+              setTimeout(() => {
+                setIsLoading(false);
+                setShowHome(false);
+              }, 1500);
+            }}
+            onShowRules={() => setShowRules(true)}
+            isLoading={isLoading}
+          />
+          <LoadingScreen 
+            key="loading-screen"
+            isOpen={isLoading}
+          />
+        </AnimatePresence>
+      </div>
+    </>
+  )
 }
+
